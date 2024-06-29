@@ -1,0 +1,154 @@
+    // Edit detail pesanan
+    if(isset($_POST['editdetail'])) {
+        $jumlahproduk = $_POST['jumlahproduk'];
+        $idkeranjang = $_POST['idkeranjang']; // ID keranjang
+        $idproduk = $_POST['idproduk'];
+        $idpesanan = $_POST['idpesanan'];
+
+        // Cari jumlah sekarang
+        $carijumlah1 = mysqli_query($koneksi, "SELECT * FROM keranjang WHERE idkeranjang='$idkeranjang'");
+        $carijumlah2 = mysqli_fetch_array($carijumlah1);
+        $jumlahsekarang = $carijumlah2['jumlahproduk'];
+
+        //Cari stok sekarang
+        $caristok1 = mysqli_query($koneksi, "SELECT * FROM produk WHERE idproduk='$idproduk'");
+        $caristok2 = mysqli_fetch_array($caristok1);
+        $stoksekarang = $caristok2['stokproduk'];
+
+        if ($jumlahproduk >= $jumlahsekarang) {
+            // Kalau inputan lebih besar daripada jumlah yang tercatat sekarang
+            // Hitung selisih
+            $selisih = $jumlahproduk - $jumlahsekarang;
+            $stokbaru = $stoksekarang - $selisih;
+
+            $query1 = mysqli_query($koneksi, "UPDATE keranjang SET jumlahproduk='$jumlahproduk' WHERE idkeranjang='$idkeranjang'");
+            $query2 = mysqli_query($koneksi, "UPDATE produk SET stokproduk='$stokbaru' WHERE idproduk='$idproduk'");
+
+            // Cek apakah data berhasil diperbarui
+            if ($query1 && $query2) {
+                echo '<script>
+                    alert("Berhasil mengedit data barang masuk!");
+                    window.location.href="lihat.php?idp='.$idp.'";
+                </script>';
+            } else {
+                echo '<script>
+                    alert("Gagal mengedit data barang masuk!");
+                    window.location.href="lihat.php?idp='.$idp.'";
+                </script>';
+            }
+        } else {
+            // Kalau inputan lebih kecil daripada jumlah yang tercatat sekarang
+            // Hitung selisih
+            $selisih = $jumlahsekarang - $jumlahproduk;
+            $stokbaru = $stoksekarang + $selisih;
+
+            $query1 = mysqli_query($koneksi, "UPDATE keranjang SET jumlahproduk='$jumlahproduk' WHERE idkeranjang='$idkeranjang'");
+            $query2 = mysqli_query($koneksi, "UPDATE produk SET stokproduk='$stokbaru' WHERE idproduk='$idproduk'");
+
+            // Cek apakah data berhasil diperbarui
+            if($query1 && $query2) {
+                echo '<script>
+                        alert("Berhasil mengedit data barang masuk!");
+                        window.location.href="lihat.php?idp='.$idp.'";
+                    </script>';
+            } else {
+                echo '<script>
+                        alert("Gagal mengedit data barang masuk!");
+                        window.location.href="lihat.php?idp='.$idp.'";
+                    </script>';
+            }
+        }
+    }
+
+    // Hapus produk pesanan
+    if(isset($_POST['hapusprodukpesanan'])) {
+        $idkeranjang = $_POST['idkeranjang'];
+        $idp = $_POST['idp'];
+        $idproduk = $_POST['idproduk'];
+
+        // Cek jumlah produk sekarang
+        $cek1 = mysqli_query($koneksi, "SELECT * FROM keranjang WHERE idkeranjang='$idkeranjang'");
+        $cek2 = mysqli_fetch_array($cek1);
+        $jumlahsekarang = $cek2['jumlahproduk'];
+
+        // Cek stok sekarang
+        $cek3 = mysqli_query($koneksi, "SELECT * FROM produk WHERE idproduk='$idproduk'");
+        $cek4 = mysqli_fetch_array($cek3);
+        $stoksekarang = $cek4['stokproduk'];
+
+        $hitung = $stoksekarang+$jumlahsekarang;
+
+        // Update stok
+        $update = mysqli_query($koneksi, "UPDATE produk SET stokproduk='$hitung' WHERE idproduk='$idproduk'");
+        $hapus = mysqli_query($koneksi, "DELETE FROM keranjang WHERE idproduk='$idproduk' AND idkeranjang='$idkeranjang'");
+
+        if($update&&$hapus) {
+            echo '<script>
+                alert("Berhasil menghapus barang!");
+                window.location.href="lihat.php?idp='.$idp.'";
+            </script>';
+        } else {
+            echo '<script>
+                alert("Gagal menghapus barang!");
+                window.location.href="lihat.php?idp='.$idp.'";
+            </script>';
+        }
+    }
+
+
+
+
+
+    // Produk dipilih di pesanan
+        if(isset($_POST['addproduk'])) {
+            $idp = $_POST['idp']; // ID Pesanan
+            $idproduk = $_POST['idproduk'];
+            $jumlahproduk = $_POST['jumlahproduk'];
+
+            // Hitung stok sekarang ada berapa
+            $hitungstok1 = mysqli_query($koneksi, "SELECT * FROM produk WHERE idproduk='$idproduk'");
+            if(mysqli_num_rows($hitungstok1) > 0) {
+                $hitungstok2 = mysqli_fetch_array($hitungstok1);
+                $stoksekarang = $hitungstok2['stokproduk']; // Stok barang saat ini
+
+                if($stoksekarang >= $jumlahproduk) {
+                    //Kurangi stok dengan jumlah yang akan dikeluarkan
+                    $selisih = $stoksekarang-$jumlahproduk;
+
+                    // Stok cukup untuk dibeli
+                    $tambahpesanan = mysqli_query($koneksi, "INSERT INTO keranjang (idpesanan, idproduk, jumlahproduk) VALUES ('$idp', '$idproduk', '$jumlahproduk')");
+                    $updatestok = mysqli_query($koneksi, "UPDATE produk SET stokproduk='$selisih' WHERE idproduk='$idproduk'");
+
+                    if($tambahpesanan&&$updatestok) {
+                        echo '<script>
+                            alert("Berhasil menambah pesanan baru!");
+                            window.location.href="lihat.php?idp='.$idp.'";
+                        </script>';
+                    } else {
+                        echo '<script>
+                            alert("Gagal menambah pesanan baru!");
+                            window.location.href="lihat.php?idp='.$idp.'";
+                        </script>';
+                    }
+                } else {
+                    echo '<script>
+                        alert("Stok barang tidak cukup!");
+                        window.location.href="lihat.php?idp='.$idp.'";
+                    </script>';
+                }
+            } else {
+                echo '<script>
+                    alert("ID produk tidak valid!");
+                    window.location.href="lihat.php?idp='.$idp.'";
+                </script>';
+            }
+        }
+    } else {
+        header('location:index.php');
+    }
+
+
+
+    
+
+                                    
